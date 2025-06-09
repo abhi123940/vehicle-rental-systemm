@@ -1,0 +1,273 @@
+import java.util.*;
+import java.util.stream.Collectors;
+
+// --- Core Feature Implementation: Vehicle Hierarchy ---
+abstract class Vehicle {
+    protected String vehicleId;
+    protected String brand;
+    protected boolean isRented;
+
+    public Vehicle(String vehicleId, String brand) {
+        // --- Data Validation: Basic constructor validation ---
+        if (vehicleId == null || vehicleId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Vehicle ID cannot be null or empty.");
+        }
+        if (brand == null || brand.trim().isEmpty()) {
+            throw new IllegalArgumentException("Brand cannot be null or empty.");
+        }
+        this.vehicleId = vehicleId;
+        this.brand = brand;
+        this.isRented = false;
+    }
+
+    public String getVehicleId() {
+        return vehicleId;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public boolean isRented() {
+        return isRented;
+    }
+
+    // --- Core Feature: Renting a Vehicle ---
+    public void rent() {
+        if (!isRented) {
+            isRented = true;
+            System.out.println(brand + " " + vehicleId + " rented successfully.");
+            // --- Event Handling: Log rental event ---
+            RentalSystemLogger.logEvent("RENT", vehicleId, "Vehicle rented.");
+        } else {
+            // --- Error Handling: Already rented ---
+            System.out.println(brand + " " + vehicleId + " is already rented.");
+            RentalSystemLogger.logError("RENT_FAILED", vehicleId, "Vehicle already rented.");
+        }
+    }
+
+    // --- Core Feature: Returning a Vehicle ---
+    public void returnVehicle() {
+        if (isRented) {
+            isRented = false;
+            System.out.println(brand + " " + vehicleId + " returned successfully.");
+            // --- Event Handling: Log return event ---
+            RentalSystemLogger.logEvent("RETURN", vehicleId, "Vehicle returned.");
+        } else {
+            // --- Error Handling: Not rented ---
+            System.out.println(brand + " " + vehicleId + " was not rented.");
+            RentalSystemLogger.logError("RETURN_FAILED", vehicleId, "Vehicle was not rented.");
+        }
+    }
+
+    public abstract void displayInfo();
+}
+
+class Car extends Vehicle {
+    private int numDoors;
+
+    public Car(String vehicleId, String brand, int numDoors) {
+        super(vehicleId, brand);
+        // --- Data Validation: Number of doors ---
+        if (numDoors <= 0) {
+            throw new IllegalArgumentException("Number of doors must be positive.");
+        }
+        this.numDoors = numDoors;
+    }
+
+    public int getNumDoors() {
+        return numDoors;
+    }
+
+    @Override
+    public void displayInfo() {
+        System.out.printf("Car: %s, ID: %s, Doors: %d, Rented: %b%n", brand, vehicleId, numDoors, isRented);
+    }
+}
+
+class Bike extends Vehicle {
+    private boolean hasCarrier;
+
+    public Bike(String vehicleId, String brand, boolean hasCarrier) {
+        super(vehicleId, brand);
+        this.hasCarrier = hasCarrier;
+    }
+
+    public boolean hasCarrier() {
+        return hasCarrier;
+    }
+
+    @Override
+    public void displayInfo() {
+        System.out.printf("Bike: %s, ID: %s, Carrier: %b, Rented: %b%n", brand, vehicleId, hasCarrier, isRented);
+    }
+}
+
+// --- Event Handling and Processing: Simple Logger ---
+class RentalSystemLogger {
+    public static void logEvent(String eventType, String vehicleId, String message) {
+        System.out.println("[LOG - " + new Date() + "] Event: " + eventType + " | Vehicle ID: " + vehicleId + " | " + message);
+    }
+
+    public static void logError(String errorType, String vehicleId, String message) {
+        System.err.println("[ERROR - " + new Date() + "] Type: " + errorType + " | Vehicle ID: " + vehicleId + " | " + message);
+    }
+}
+
+class VehicleRentalSystem {
+    private static List<Vehicle> vehicleList = new ArrayList<>();
+    private static Scanner scanner = new Scanner(System.in); // --- Integration of Components: Single scanner instance ---
+
+    public static void main(String[] args) {
+        initializeVehicles();
+
+        int choice;
+        do {
+            displayMenu();
+            choice = getUserChoice(); // Using enhanced getUserChoice
+            handleUserChoice(choice); // Using event-driven approach for choices
+        } while (choice != 4);
+
+        scanner.close();
+        RentalSystemLogger.logEvent("SYSTEM_EXIT", "N/A", "Vehicle rental system shut down.");
+    }
+
+    // --- Integration of Components: Centralized vehicle initialization ---
+    private static void initializeVehicles() {
+        try {
+            vehicleList.add(new Car("C101", "Toyota", 4));
+            vehicleList.add(new Car("C102", "Honda", 2));
+            vehicleList.add(new Bike("B201", "Yamaha", true));
+            vehicleList.add(new Bike("B202", "Bajaj", false));
+            // --- Innovative Features: Add more vehicle types or dynamic loading ---
+            // vehicleList.add(new Truck("T301", "Ford", 1000)); // Example for future expansion
+            RentalSystemLogger.logEvent("INITIALIZATION", "N/A", "Vehicles initialized successfully.");
+        } catch (IllegalArgumentException e) {
+            RentalSystemLogger.logError("INITIALIZATION_FAILED", "N/A", "Error initializing vehicles: " + e.getMessage());
+        }
+    }
+
+    private static void displayMenu() {
+        System.out.println("\n--- Vehicle Rental System ---");
+        System.out.println("1. Display all vehicles");
+        System.out.println("2. Rent a vehicle");
+        System.out.println("3. Return a vehicle");
+        System.out.println("4. Exit");
+        System.out.print("Enter choice: ");
+    }
+
+    // --- Error Handling and Robustness: Improved input validation ---
+    private static int getUserChoice() {
+        while (true) {
+            try {
+                String input = scanner.nextLine();
+                int choice = Integer.parseInt(input);
+                // --- Data Validation: Choice range validation ---
+                if (choice >= 1 && choice <= 4) {
+                    return choice;
+                } else {
+                    System.out.println("Invalid choice. Please enter a number between 1 and 4.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a number.");
+                RentalSystemLogger.logError("INPUT_ERROR", "N/A", "Non-integer input for menu choice.");
+            }
+        }
+    }
+
+    // --- Event Handling and processing: Centralized choice handling ---
+    private static void handleUserChoice(int choice) {
+        switch (choice) {
+            case 1:
+                displayAllVehicles();
+                RentalSystemLogger.logEvent("MENU_ACTION", "N/A", "Displayed all vehicles.");
+                break;
+            case 2:
+                rentVehicle(); // Call rentVehicle without passing scanner
+                RentalSystemLogger.logEvent("MENU_ACTION", "N/A", "Attempting to rent a vehicle.");
+                break;
+            case 3:
+                returnVehicle(); // Call returnVehicle without passing scanner
+                RentalSystemLogger.logEvent("MENU_ACTION", "N/A", "Attempting to return a vehicle.");
+                break;
+            case 4:
+                System.out.println("Exiting system...");
+                break;
+            default:
+                // This case should ideally not be reached due to getUserChoice validation
+                System.out.println("An unexpected error occurred. Please try again.");
+                RentalSystemLogger.logError("UNEXPECTED_CHOICE", "N/A", "Unexpected choice value received.");
+        }
+    }
+
+    private static void displayAllVehicles() {
+        if (vehicleList.isEmpty()) {
+            System.out.println("No vehicles currently in the system.");
+            return;
+        }
+        System.out.println("\n--- Available Vehicles ---");
+        vehicleList.forEach(Vehicle::displayInfo);
+    }
+
+    // --- Error Handling and Robustness: Input validation for vehicle ID ---
+    // --- Code Quality: Reusing scanner, separating concerns ---
+    private static void rentVehicle() {
+        System.out.print("Enter Vehicle ID to rent: ");
+        String rentId = scanner.nextLine().trim(); // Use nextLine for full string and trim
+        if (rentId.isEmpty()) {
+            System.out.println("Vehicle ID cannot be empty.");
+            RentalSystemLogger.logError("INPUT_VALIDATION", "N/A", "Empty vehicle ID provided for renting.");
+            return;
+        }
+        Vehicle rentVehicle = findVehicle(rentId);
+        if (rentVehicle != null) {
+            rentVehicle.rent();
+        } else {
+            System.out.println("Vehicle with ID '" + rentId + "' not found.");
+            RentalSystemLogger.logError("VEHICLE_NOT_FOUND", rentId, "Attempted to rent non-existent vehicle.");
+        }
+    }
+
+    private static void returnVehicle() {
+        System.out.print("Enter Vehicle ID to return: ");
+        String returnId = scanner.nextLine().trim(); // Use nextLine for full string and trim
+        if (returnId.isEmpty()) {
+            System.out.println("Vehicle ID cannot be empty.");
+            RentalSystemLogger.logError("INPUT_VALIDATION", "N/A", "Empty vehicle ID provided for returning.");
+            return;
+        }
+        Vehicle returnVehicle = findVehicle(returnId);
+        if (returnVehicle != null) {
+            returnVehicle.returnVehicle();
+        } else {
+            System.out.println("Vehicle with ID '" + returnId + "' not found.");
+            RentalSystemLogger.logError("VEHICLE_NOT_FOUND", returnId, "Attempted to return non-existent vehicle.");
+        }
+    }
+
+    // --- Code Quality: Uses Stream API for concise search ---
+    private static Vehicle findVehicle(String id) {
+        return vehicleList.stream()
+                .filter(v -> v.getVehicleId().equalsIgnoreCase(id))
+                .findFirst()
+                .orElse(null);
+    }
+
+    // --- Innovative Features (Example: Could be expanded) ---
+    // This could be a method to add a new vehicle dynamically
+    public static void addNewVehicle(Vehicle vehicle) {
+        if (vehicle == null) {
+            RentalSystemLogger.logError("ADD_VEHICLE_FAILED", "N/A", "Attempted to add a null vehicle.");
+            return;
+        }
+        // Data Validation: Prevent duplicate vehicle IDs
+        if (findVehicle(vehicle.getVehicleId()) != null) {
+            System.out.println("Vehicle with ID " + vehicle.getVehicleId() + " already exists.");
+            RentalSystemLogger.logError("ADD_VEHICLE_FAILED", vehicle.getVehicleId(), "Duplicate vehicle ID.");
+            return;
+        }
+        vehicleList.add(vehicle);
+        System.out.println("Vehicle " + vehicle.getBrand() + " with ID " + vehicle.getVehicleId() + " added successfully.");
+        RentalSystemLogger.logEvent("ADD_VEHICLE", vehicle.getVehicleId(), "New vehicle added.");
+    }
+}

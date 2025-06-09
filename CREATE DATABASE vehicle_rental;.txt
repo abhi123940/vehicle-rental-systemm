@@ -1,0 +1,12 @@
+CREATE DATABASE vehicle_rental;
+
+USE vehicle_rental;
+
+CREATE TABLE vehicles (
+    vehicle_id VARCHAR(10) PRIMARY KEY,
+    brand VARCHAR(50),
+    type ENUM('Car', 'Bike'),
+    num_doors INT DEFAULT NULL,
+    has_carrier BOOLEAN DEFAULT NULL,
+    is_rented BOOLEAN DEFAULT FALSE
+);

@@ -1,0 +1,81 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+
+public class VehicleRentalGUI extends JFrame {
+    private JTextField idField;
+    private JButton rentBtn, returnBtn, showBtn;
+
+    public VehicleRentalGUI() {
+        setTitle("Vehicle Rental System");
+        setSize(400, 200);
+        setLayout(new FlowLayout());
+
+        idField = new JTextField(10);
+        rentBtn = new JButton("Rent");
+        returnBtn = new JButton("Return");
+        showBtn = new JButton("Show All");
+
+        add(new JLabel("Vehicle ID:"));
+        add(idField);
+        add(rentBtn);
+        add(returnBtn);
+        add(showBtn);
+
+        rentBtn.addActionListener(e -> rentVehicle());
+        returnBtn.addActionListener(e -> returnVehicle());
+        showBtn.addActionListener(e -> showVehicles());
+
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+
+    private void rentVehicle() {
+        String id = idField.getText();
+        try (Connection con = DBConnector.getConnection()) {
+            PreparedStatement ps = con.prepareStatement("UPDATE vehicles SET is_rented = TRUE WHERE vehicle_id = ? AND is_rented = FALSE");
+            ps.setString(1, id);
+            int updated = ps.executeUpdate();
+            JOptionPane.showMessageDialog(this, updated > 0 ? "Rented successfully!" : "Already rented or not found.");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void returnVehicle() {
+        String id = idField.getText();
+        try (Connection con = DBConnector.getConnection()) {
+            PreparedStatement ps = con.prepareStatement("UPDATE vehicles SET is_rented = FALSE WHERE vehicle_id = ? AND is_rented = TRUE");
+            ps.setString(1, id);
+            int updated = ps.executeUpdate();
+            JOptionPane.showMessageDialog(this, updated > 0 ? "Returned successfully!" : "Vehicle not rented.");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void showVehicles() {
+        try (Connection con = DBConnector.getConnection();
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM vehicles")) {
+
+            StringBuilder sb = new StringBuilder();
+            while (rs.next()) {
+                sb.append(rs.getString("vehicle_id"))
+                  .append(" - ").append(rs.getString("brand"))
+                  .append(" (").append(rs.getString("type"))
+                  .append(") - Rented: ").append(rs.getBoolean("is_rented"))
+                  .append("\n");
+            }
+            JOptionPane.showMessageDialog(this, sb.toString());
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(VehicleRentalGUI::new);
+    }
+}
